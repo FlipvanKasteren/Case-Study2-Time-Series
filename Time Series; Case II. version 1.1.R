@@ -443,3 +443,4 @@ print(cor_matrix)
 eigenvalues <- eigen(cov(residuals(VAR_model)))$values
 print(eigenvalues)
 
+#testkajlsdhfkjahsdg
