@@ -51,18 +51,54 @@ VAR_data <- na.omit(Data[, c("INDPRO_stationary", "CPIULFSL_stationary", "FEDFUN
 # y_{3,t} = c_3 + sum_{i=1}^p (\phi_{31}INPRO_{t-i} + \phi_{32}CPIULFSL_{t-i} + \phi_{33}FEDFUNDS_{t-i} + e_{3t})
 
 #POPULAR METHODS (3) for LAG SELECTION
-lag_selection <- VARselect(VAR_data, lag.max = 10, type = "const")
+lag_selection <- VARselect(VAR_data, lag.max = 20, type = "const")
 print(lag_selection)
 # The 4 different criteria suggest the following number of lags (p):
-# p <- 9 : AIC(n)
-# p <- 9  : HQ(n)
+# p <- 15 : AIC(n)
+# p <- 5  : HQ(n)
 # p <- 3 : SC(n)/BIC(n)
-# p <- 9 : FPE(n) --> Final Prediction Error (find p that min FPE)
+# p <- 15 : FPE(n) --> Final Prediction Error (find p that min FPE)
+
+# Sequential tests on the nullity of coefficient matrices.
+# Fit VAR models for different lags
+max_lag <- 20  # Maximum lag length
+var_models <- lapply(1:max_lag, function(p) VAR(VAR_data, p = p, type = "const"))
+
+# Perform sequential likelihood ratio (LR) tests
+p_values <- c()  # To store p-values
+for (p in max_lag:2) {
+  # Current model and previous model
+  model_p <- var_models[[p]]
+  model_p_minus_1 <- var_models[[p - 1]]
+  
+  # Extract log-likelihoods
+  logL_p <- logLik(model_p)
+  logL_p_minus_1 <- logLik(model_p_minus_1)
+  
+  # Calculate LR statistic
+  LR_stat <- -2 * (as.numeric(logL_p_minus_1) - as.numeric(logL_p))
+  
+  # Degrees of freedom: number of parameters in one lag
+  n_vars <- ncol(VAR_data)  # Number of variables in the VAR
+  df <- n_vars^2
+  
+  # Calculate p-value
+  p_value <- 1 - pchisq(LR_stat, df)
+  p_values <- c(p_values, p_value)
+}
+
+# Combine results into a data frame
+results <- data.frame(Lag = max_lag:2, P_Value = p_values)
+print(results)
+
+# Determine the optimal lag (where p-value > 0.05 for the first time)
+optimal_lag <- min(results$Lag[results$P_Value > 0.05])
+cat("Optimal lag selected:", optimal_lag, "\n")
+
 
 #ALSO: select Pmax and sequential testing on null coeff. matrix
 
 # TASK 2.2: DETERMINING LAG ORDER
-# Looks at upto 10 lags and outputs AIC/BIC corresponding to lowest
 VAR_model <- VAR(VAR_data, p = 3, type = "const")
 summary(VAR_model)
 
@@ -73,9 +109,9 @@ summary(VAR_model)
 # TASK 2.3: VALIDATING VAR MODEL
 ## check if all time series are actually stationary
 # Remove NA values from the transformed series
-INDPRO_stationary <- na.omit(Data$INDPRO_stationary)
-CPIULFSL_stationary <- na.omit(Data$CPIULFSL_stationary)
-FEDFUNDS_stationary <- na.omit(Data$FEDFUNDS_stationary)
+INDPRO_stationary <- VAR_data$INDPRO_stationary
+CPIULFSL_stationary <- VAR_data$CPIULFSL_stationary
+FEDFUNDS_stationary <- VAR_data$FEDFUNDS_stationary
 
 # ADF test for INDPRO_stationary
 adf_indpro <- adf.test(INDPRO_stationary, alternative = "stationary")
@@ -117,16 +153,23 @@ if (all(Mod(stability) < 1)) {
   cat("The VAR model is NOT stable.\n")
 }
 
-# Error terms are staionary and VAR is stable implying matrix yt is stationary
+
+# Error terms are staionary and VAR is stable implying vector yt is stationary
 
 
-# Portmanteau test for serial correlation
-portmanteau_test <- serial.test(VAR_model, lags.pt = 3, type = "PT.asymptotic")
-print(portmanteau_test)
 
-# Conclusion--> pvalue very small, reject H0 hypothesis. There is autocorrelation in residuals!
+# Perform Ljung-Box test on residuals of each equation
+for (i in colnames(var_residuals)) {
+  cat("Ljung-Box Test for residuals of:", i, "\n")
+  print(Box.test(var_residuals[, i], lag = 10, type = "Ljung-Box"))
+  cat("\n")
+}
 
-# Check where the autocorelation is and if it affects the model. 
+
+
+
+
+
 
 
 # ACF for INDPRO_stationary residuals
@@ -137,6 +180,62 @@ acf(var_residuals[, "CPIULFSL_stationary"], main = "ACF of CPIULFSL Residuals", 
 
 # ACF for FEDFUNDS_stationary residuals
 acf(var_residuals[, "FEDFUNDS_stationary"], main = "ACF of FEDFUNDS Residuals", lag.max = 20)
+
+
+
+
+# Calculate the covariance matrix of residuals
+cov_matrix <- cov(var_residuals) 
+
+# Cross-correlation between INDPRO and CPIULFSL residuals
+ccf(var_residuals[, "INDPRO_stationary"], var_residuals[, "CPIULFSL_stationary"],
+    main = "Cross-correlation between INDPRO and CPIULFSL residuals")
+
+# Cross-correlation between INDPRO and FEDFUNDS residuals
+ccf(var_residuals[, "INDPRO_stationary"], var_residuals[, "FEDFUNDS_stationary"],
+    main = "Cross-correlation between INDPRO and FEDFUNDS residuals")
+
+# Cross-correlation between CPIULFSL and FEDFUNDS residuals
+ccf(var_residuals[, "CPIULFSL_stationary"], var_residuals[, "FEDFUNDS_stationary"],
+    main = "Cross-correlation between CPIULFSL and FEDFUNDS residuals")
+
+
+
+library(vars)
+
+# Fit VAR model
+VAR_model <- VAR(VAR_data, p = 3, type = "const")
+
+# Perform Jarque-Bera test for normality on residuals
+normality_test <- normality.test(VAR_model)
+print(normality_test)
+
+
+
+# Extract residuals
+residuals <- residuals(VAR_model)
+
+
+# Fit your VAR(3) model
+VAR_model <- VAR(VAR_data, p = 3, type = "const")
+
+# Extract residuals
+residuals <- residuals(VAR_model)
+
+# Plot the density of residuals for each equation
+par(mfrow = c(2, 2))  # Set up a 2x2 grid for plots
+
+for (i in colnames(residuals)) {
+  # Density plot
+  plot(density(residuals[, i]), 
+       main = paste("Density of Residuals for", i),
+       xlab = "Residuals", 
+       ylab = "Density",
+       col = "blue", 
+       lwd = 2)
+}
+
+par(mfrow = c(1, 1))  # Reset to default layout
 
 
 # Autocorrelation exists due to Model Specification: not all relevant variables are included in the model
