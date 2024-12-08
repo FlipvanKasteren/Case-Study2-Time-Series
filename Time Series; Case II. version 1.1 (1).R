@@ -434,26 +434,59 @@ library(svars)
 
 # Ensure the variables are in the correct order
 # Reorder the VAR data to match the recursive order: FEDFUNDS -> CPIULFSL -> INDPRO
-VAR_data_reordered <- VAR_data[, c("FEDFUNDS_stationary", "CPIULFSL_stationary", "INDPRO_stationary")]
+VAR_data_reordered1 <- VAR_data[, c("CPIULFSL_stationary", "FEDFUNDS_stationary","INDPRO_stationary")]
+VAR_data_reordered2 <- VAR_data[, c("INDPRO_stationary", "CPIULFSL_stationary","FEDFUNDS_stationary")]
 
 # Fit the reduced-form VAR model with 2 lags (chosen previously)
-VAR_model <- VAR(VAR_data_reordered, p = 3, type = "const")
+VAR_model1 <- VAR(VAR_data_reordered1, p = 3, type = "const")
 
 # Apply the Cholesky decomposition to identify the structural VAR
-SVAR_model <- id.chol(VAR_model)
+SVAR_model1 <- id.chol(VAR_model1)
 
 # Display the identified structural VAR model
-summary(SVAR_model)
+summary(SVAR_model1)
 
 # Extract the structural shocks
-structural_shocks <- residuals(SVAR_model)
+structural_shocks <- residuals(SVAR_model1)
 head(structural_shocks)
 
 # Plot Impulse Response Functions (IRFs) for the Structural VAR
-irf_svar <- irf(SVAR_model, n.ahead = 12, boot = TRUE, ci = 0.95)
+irf_svar <- irf(SVAR_model1, n.ahead = 12, boot = TRUE, ci = 0.95)
 
 # Plot IRFs
 plot(irf_svar, main = "Impulse Response Functions for SVAR (Cholesky)")
 
 
+# Fit the reduced-form VAR model with 2 lags (chosen previously)
+VAR_model2 <- VAR(VAR_data_reordered2, p = 3, type = "const")
 
+# Apply the Cholesky decomposition to identify the structural VAR
+SVAR_model2 <- id.chol(VAR_model2)
+
+# Display the identified structural VAR model
+summary(SVAR_model2)
+
+# Extract the structural shocks
+structural_shocks <- residuals(SVAR_model2)
+head(structural_shocks)
+
+# Plot Impulse Response Functions (IRFs) for the Structural VAR
+irf_svar2 <- irf(SVAR_model2, n.ahead = 12, boot = TRUE, ci = 0.95)
+
+# Plot IRFs
+plot(irf_svar2, main = "Impulse Response Functions for SVAR (Cholesky)")
+plot(irf_svar, main = "Impulse Response Functions for SVAR (Cholesky)")
+
+names(irf_svar$irf)
+names(irf_svar2$irf)
+irf_svar2$irf <- irf_svar2$irf[names(irf_svar$irf)]
+irf_svar2$Lower <- irf_svar2$Lower[names(irf_svar$irf)]
+irf_svar2$Upper <- irf_svar2$Upper[names(irf_svar$irf)]
+par(mfrow = c(1, 2))  # Set up side-by-side plots
+
+# Plot Model 1
+plot(irf_svar, main = "Impulse Response Functions for SVAR (Model 1)")
+
+# Plot Model 2 (with reordered shocks)
+plot(irf_svar2, main = "Impulse Response Functions for SVAR (Model 2)")
+S
