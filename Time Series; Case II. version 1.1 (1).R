@@ -38,8 +38,6 @@ ggplot(Data, aes(x = Date, y = CPIULFSL_stationary)) + geom_line(color = "blue")
 ggplot(Data, aes(x = Date, y = FEDFUNDS_stationary)) + geom_line(color = "blue") + labs(title = "Transformed Federal Funds Over Time", x = "Date", y = "Transformed Federal Funds Rate") + theme_minimal()
 
 
-
-
 # 2. ESTIMATING VAR MODELS AND SELECTING THE LAG ORDER
 # TASK 2.1: SPECIFY AND TRIVIATE VAR MODEL
 VAR_data <- na.omit(Data[, c("INDPRO_stationary", "CPIULFSL_stationary", "FEDFUNDS_stationary")])
