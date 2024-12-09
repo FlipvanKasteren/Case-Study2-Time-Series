@@ -96,13 +96,11 @@ optimal_lag <- min(results$Lag[results$P_Value > 0.05])
 cat("Optimal lag selected:", optimal_lag, "\n")
 
 
-#ALSO: select Pmax and sequential testing on null coeff. matrix
+#Alternative technique would have been: select Pmax and sequential testing on null coeff. matrix (Not done here, but mentioned)
 
 # TASK 2.2: DETERMINING LAG ORDER
 VAR_model <- VAR(VAR_data, p = 3, type = "const")
 summary(VAR_model)
-
-# p = 9 has higher adjusted R-squared than p = 3, explain why we use BIC and not the other IC\
 
 #ESTIMATING VAR(p=3) MODEL
 
@@ -126,7 +124,6 @@ print(adf_indpro)
 print(adf_cpi)
 print(adf_fedfunds)
 
-
 # Extract residuals from VAR model
 var_residuals <- residuals(VAR_model)
 
@@ -140,7 +137,7 @@ print(adf_indpro)
 print(adf_cpiulfsl)
 print(adf_fedfunds)
 
-# The residuals are staionary
+# The residuals are stationary
 
 # Check for stability of the VAR model
 stability <- roots(VAR_model)
@@ -153,10 +150,7 @@ if (all(Mod(stability) < 1)) {
   cat("The VAR model is NOT stable.\n")
 }
 
-
 # Error terms are staionary and VAR is stable implying vector yt is stationary
-
-
 
 # Perform Ljung-Box test on residuals of each equation
 for (i in colnames(var_residuals)) {
@@ -164,13 +158,6 @@ for (i in colnames(var_residuals)) {
   print(Box.test(var_residuals[, i], lag = 10, type = "Ljung-Box"))
   cat("\n")
 }
-
-
-
-
-
-
-
 
 # ACF for INDPRO_stationary residuals
 acf(var_residuals[, "INDPRO_stationary"], main = "ACF of INDPRO Residuals", lag.max = 20)
@@ -182,8 +169,7 @@ acf(var_residuals[, "CPIULFSL_stationary"], main = "ACF of CPIULFSL Residuals", 
 acf(var_residuals[, "FEDFUNDS_stationary"], main = "ACF of FEDFUNDS Residuals", lag.max = 20)
 
 
-
-
+                     
 # Calculate the covariance matrix of residuals
 cov_matrix <- cov(var_residuals) 
 
@@ -200,27 +186,16 @@ ccf(var_residuals[, "CPIULFSL_stationary"], var_residuals[, "FEDFUNDS_stationary
     main = "Cross-correlation between CPIULFSL and FEDFUNDS residuals")
 
 
-
-library(vars)
-
-# Fit VAR model
+# Fit VAR(3) model
 VAR_model <- VAR(VAR_data, p = 3, type = "const")
 
 # Perform Jarque-Bera test for normality on residuals
 normality_test <- normality.test(VAR_model)
 print(normality_test)
-
-
-
+                    
 # Extract residuals
 residuals <- residuals(VAR_model)
 
-
-# Fit your VAR(3) model
-VAR_model <- VAR(VAR_data, p = 3, type = "const")
-
-# Extract residuals
-residuals <- residuals(VAR_model)
 
 # Plot the density of residuals for each equation
 par(mfrow = c(2, 2))  # Set up a 2x2 grid for plots
@@ -236,7 +211,6 @@ for (i in colnames(residuals)) {
 }
 
 par(mfrow = c(1, 1))  # Reset to default layout
-
 
 # Autocorrelation exists due to Model Specification: not all relevant variables are included in the model
 
@@ -306,7 +280,6 @@ for (pair in variable_pairs) {
 # INDPRO Granger causes FEDFUNDS
 # FEDFUNDS Granger causes INDPRO (niet waar)
 # FEDFUNDS Granger causes CPI
-
 
 
 #4 Impulse Response functions for reduced-form VAR's
@@ -437,7 +410,7 @@ library(svars)
 VAR_data_reordered1 <- VAR_data[, c("CPIULFSL_stationary", "FEDFUNDS_stationary","INDPRO_stationary")]
 VAR_data_reordered2 <- VAR_data[, c("INDPRO_stationary", "CPIULFSL_stationary","FEDFUNDS_stationary")]
 
-# Fit the reduced-form VAR model with 2 lags (chosen previously)
+# Fit the reduced-form VAR model with 3 lags (chosen previously)
 VAR_model1 <- VAR(VAR_data_reordered1, p = 3, type = "const")
 
 # Apply the Cholesky decomposition to identify the structural VAR
@@ -489,4 +462,3 @@ plot(irf_svar, main = "Impulse Response Functions for SVAR (Model 1)")
 
 # Plot Model 2 (with reordered shocks)
 plot(irf_svar2, main = "Impulse Response Functions for SVAR (Model 2)")
-S
