@@ -2,7 +2,7 @@ library(ggplot2)
 library(rstan)
 library(vars)
 library(gridExtra)
-library(tseries)
+library(bootUR)
 
 # 1. DATA EXPLORATION
 # TASK 1.1: LOADING AND EXPLORING DATA
@@ -38,9 +38,30 @@ ggplot(Data, aes(x = Date, y = CPIULFSL_stationary)) + geom_line(color = "blue")
 ggplot(Data, aes(x = Date, y = FEDFUNDS_stationary)) + geom_line(color = "blue") + labs(title = "Transformed Federal Funds Over Time", x = "Date", y = "Transformed Federal Funds Rate") + theme_minimal()
 
 
+
+
 # 2. ESTIMATING VAR MODELS AND SELECTING THE LAG ORDER
 # TASK 2.1: SPECIFY AND TRIVIATE VAR MODEL
 VAR_data <- na.omit(Data[, c("INDPRO_stationary", "CPIULFSL_stationary", "FEDFUNDS_stationary")])
+
+
+## check if all time series are actually stationary
+INDPRO_stationary <- VAR_data$INDPRO_stationary
+CPIULFSL_stationary <- VAR_data$CPIULFSL_stationary
+FEDFUNDS_stationary <- VAR_data$FEDFUNDS_stationary
+
+# ADF test for INDPRO_stationary
+adf_indpro <- adf(INDPRO_stationary)
+
+# ADF test for CPIULFSL_stationary
+adf_cpi <- adf(CPIULFSL_stationary)
+
+# ADF test for FEDFUNDS_stationary
+adf_fedfunds <- adf(FEDFUNDS_stationary)
+
+print(adf_indpro)
+print(adf_cpi)
+print(adf_fedfunds)
 
 # We have VAR(p) model, where p = lag order, and:
 # y_{1,t} : INDPRO_stationary
@@ -50,7 +71,7 @@ VAR_data <- na.omit(Data[, c("INDPRO_stationary", "CPIULFSL_stationary", "FEDFUN
 # y_{2,t} = c_2 + sum_{i=1}^p (\phi_{21}INPRO_{t-i} + \phi_{22}CPIULFSL_{t-i} + \phi_{23}FEDFUNDS_{t-i} + e_{2t})
 # y_{3,t} = c_3 + sum_{i=1}^p (\phi_{31}INPRO_{t-i} + \phi_{32}CPIULFSL_{t-i} + \phi_{33}FEDFUNDS_{t-i} + e_{3t})
 
-#POPULAR METHODS (3) for LAG SELECTION
+#POPULAR METHODs for LAG SELECTION
 lag_selection <- VARselect(VAR_data, lag.max = 20, type = "const")
 print(lag_selection)
 # The 4 different criteria suggest the following number of lags (p):
@@ -95,7 +116,17 @@ print(results)
 optimal_lag <- min(results$Lag[results$P_Value > 0.05])
 cat("Optimal lag selected:", optimal_lag, "\n")
 
+## We decided to choose the BIC for the lag length selection, not the sequential test. So lag length = 3
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+VAR_model <- VAR(VAR_data, p = 3, type = "const")
+summary(VAR_model)
+
+## VALIDATING VAR MODEL
+=======
+>>>>>>> Stashed changes
 #Alternative technique would have been: select Pmax and sequential testing on null coeff. matrix (Not done here, but mentioned)
 
 # TASK 2.2: DETERMINING LAG ORDER
@@ -139,6 +170,7 @@ print(adf_fedfunds)
 
 # The residuals are stationary
 
+>>>>>>> 5212dcf3cc02acc831882ca7846d9daff9937b35
 # Check for stability of the VAR model
 stability <- roots(VAR_model)
 print(stability)
@@ -150,7 +182,17 @@ if (all(Mod(stability) < 1)) {
   cat("The VAR model is NOT stable.\n")
 }
 
+<<<<<<< Updated upstream
 # Error terms are staionary and VAR is stable implying vector yt is stationary
+=======
+<<<<<<< HEAD
+
+# Extract residuals
+var_residuals <- residuals(VAR_model)
+=======
+# Error terms are staionary and VAR is stable implying vector yt is stationary
+>>>>>>> 5212dcf3cc02acc831882ca7846d9daff9937b35
+>>>>>>> Stashed changes
 
 # Perform Ljung-Box test on residuals of each equation
 for (i in colnames(var_residuals)) {
@@ -159,6 +201,14 @@ for (i in colnames(var_residuals)) {
   cat("\n")
 }
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+# Ljung-box test suggests autocorrelation in residuals of INDPRO
+
+=======
+>>>>>>> 5212dcf3cc02acc831882ca7846d9daff9937b35
+>>>>>>> Stashed changes
 # ACF for INDPRO_stationary residuals
 acf(var_residuals[, "INDPRO_stationary"], main = "ACF of INDPRO Residuals", lag.max = 20)
 
@@ -168,10 +218,20 @@ acf(var_residuals[, "CPIULFSL_stationary"], main = "ACF of CPIULFSL Residuals", 
 # ACF for FEDFUNDS_stationary residuals
 acf(var_residuals[, "FEDFUNDS_stationary"], main = "ACF of FEDFUNDS Residuals", lag.max = 20)
 
+# Visually inspect autocorrelations
 
+<<<<<<< Updated upstream
                      
+=======
+<<<<<<< HEAD
+# Test for cross-correlations
+=======
+                     
+>>>>>>> 5212dcf3cc02acc831882ca7846d9daff9937b35
+>>>>>>> Stashed changes
 # Calculate the covariance matrix of residuals
 cov_matrix <- cov(var_residuals) 
+print(cov_matrix)
 
 # Cross-correlation between INDPRO and CPIULFSL residuals
 ccf(var_residuals[, "INDPRO_stationary"], var_residuals[, "CPIULFSL_stationary"],
@@ -186,6 +246,11 @@ ccf(var_residuals[, "CPIULFSL_stationary"], var_residuals[, "FEDFUNDS_stationary
     main = "Cross-correlation between CPIULFSL and FEDFUNDS residuals")
 
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
 # Fit VAR(3) model
 VAR_model <- VAR(VAR_data, p = 3, type = "const")
 
@@ -215,6 +280,7 @@ par(mfrow = c(1, 1))  # Reset to default layout
 # Autocorrelation exists due to Model Specification: not all relevant variables are included in the model
 
 
+>>>>>>> 5212dcf3cc02acc831882ca7846d9daff9937b35
 # 3. GRANGER CAUSALITY
 # TASK 3.1: EXPLAIN GRANGER CAUSALITY
 # - X Granger causes Y: Y can be better explained/predicted when we take X into account. 
@@ -223,8 +289,6 @@ par(mfrow = c(1, 1))  # Reset to default layout
 # --> X provides additional predictive power for Y
 
 # = Not direct causal relationship
-
-#Example: interest rate Granger causes inflation
 
 # TASK 3.2: PERFORMING CAUSALITY TESTS & INTERPRETING RESULTS
 # H_0: The variable does not Granger-cause the other variable(s) in the model.
@@ -260,7 +324,7 @@ for (pair in variable_pairs) {
   subset_data <- bivariate_data[, c(var1, var2)]
   
   # Estimate the bivariate VAR model
-  bivariate_VAR <- VAR(subset_data, p = 2, type = "const")
+  bivariate_VAR <- VAR(subset_data, p = 3, type = "const")
   
   # Perform Granger causality tests
   cat(paste0("\n--- Granger Causality Tests for: ", var1, " and ", var2, " ---\n"))
@@ -278,7 +342,6 @@ for (pair in variable_pairs) {
 
 # RESULTS
 # INDPRO Granger causes FEDFUNDS
-# FEDFUNDS Granger causes INDPRO (niet waar)
 # FEDFUNDS Granger causes CPI
 
 
@@ -292,9 +355,6 @@ for (pair in variable_pairs) {
 #--> Traces the path of the effect over time: how large is initial response?, 
 #how long does the effect last?, does the shock dissapear /stabilize?
 
-
-# TASK 4.2: Compute IRF's 
-VAR_model <- VAR(VAR_data, p = 3, type = "const")
 
 # IRFs for INDPRO_stationary
 irf_indpro_to_indpro <- irf(VAR_model, impulse = "INDPRO_stationary", response = "INDPRO_stationary", n.ahead = 12, boot = TRUE, ci = 0.95)
