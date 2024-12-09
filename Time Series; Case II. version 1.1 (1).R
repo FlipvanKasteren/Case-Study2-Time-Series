@@ -116,15 +116,11 @@ cat("Optimal lag selected:", optimal_lag, "\n")
 
 ## We decided to choose the BIC for the lag length selection, not the sequential test. So lag length = 3
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
 VAR_model <- VAR(VAR_data, p = 3, type = "const")
 summary(VAR_model)
 
 ## VALIDATING VAR MODEL
-=======
->>>>>>> Stashed changes
+
 #Alternative technique would have been: select Pmax and sequential testing on null coeff. matrix (Not done here, but mentioned)
 
 # TASK 2.2: DETERMINING LAG ORDER
@@ -168,7 +164,6 @@ print(adf_fedfunds)
 
 # The residuals are stationary
 
->>>>>>> 5212dcf3cc02acc831882ca7846d9daff9937b35
 # Check for stability of the VAR model
 stability <- roots(VAR_model)
 print(stability)
@@ -180,17 +175,11 @@ if (all(Mod(stability) < 1)) {
   cat("The VAR model is NOT stable.\n")
 }
 
-<<<<<<< Updated upstream
 # Error terms are staionary and VAR is stable implying vector yt is stationary
-=======
-<<<<<<< HEAD
 
 # Extract residuals
 var_residuals <- residuals(VAR_model)
-=======
 # Error terms are staionary and VAR is stable implying vector yt is stationary
->>>>>>> 5212dcf3cc02acc831882ca7846d9daff9937b35
->>>>>>> Stashed changes
 
 # Perform Ljung-Box test on residuals of each equation
 for (i in colnames(var_residuals)) {
@@ -199,14 +188,8 @@ for (i in colnames(var_residuals)) {
   cat("\n")
 }
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
 # Ljung-box test suggests autocorrelation in residuals of INDPRO
 
-=======
->>>>>>> 5212dcf3cc02acc831882ca7846d9daff9937b35
->>>>>>> Stashed changes
 # ACF for INDPRO_stationary residuals
 acf(var_residuals[, "INDPRO_stationary"], main = "ACF of INDPRO Residuals", lag.max = 20)
 
@@ -216,17 +199,8 @@ acf(var_residuals[, "CPIULFSL_stationary"], main = "ACF of CPIULFSL Residuals", 
 # ACF for FEDFUNDS_stationary residuals
 acf(var_residuals[, "FEDFUNDS_stationary"], main = "ACF of FEDFUNDS Residuals", lag.max = 20)
 
-# Visually inspect autocorrelations
-
-<<<<<<< Updated upstream
-                     
-=======
-<<<<<<< HEAD
 # Test for cross-correlations
-=======
-                     
->>>>>>> 5212dcf3cc02acc831882ca7846d9daff9937b35
->>>>>>> Stashed changes
+
 # Calculate the covariance matrix of residuals
 cov_matrix <- cov(var_residuals) 
 print(cov_matrix)
@@ -243,12 +217,7 @@ ccf(var_residuals[, "INDPRO_stationary"], var_residuals[, "FEDFUNDS_stationary"]
 ccf(var_residuals[, "CPIULFSL_stationary"], var_residuals[, "FEDFUNDS_stationary"],
     main = "Cross-correlation between CPIULFSL and FEDFUNDS residuals")
 
-
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-=======
->>>>>>> Stashed changes
+                     
 # Fit VAR(3) model
 VAR_model <- VAR(VAR_data, p = 3, type = "const")
 
@@ -277,8 +246,6 @@ par(mfrow = c(1, 1))  # Reset to default layout
 
 # Autocorrelation exists due to Model Specification: not all relevant variables are included in the model
 
-
->>>>>>> 5212dcf3cc02acc831882ca7846d9daff9937b35
 # 3. GRANGER CAUSALITY
 # TASK 3.1: EXPLAIN GRANGER CAUSALITY
 # - X Granger causes Y: Y can be better explained/predicted when we take X into account. 
@@ -422,7 +389,6 @@ plot(irf_ffr_to_ffr, main = "Response of FFR to a Shock in FFR")
 #--> Adapt for 2nd order log-differences
 
 #OBTAINING IRF(levels) from IRF(original)
-
 
 
 # TASK 4.6: 
