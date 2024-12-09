@@ -3,7 +3,8 @@ library(rstan)
 library(vars)
 library(gridExtra)
 library(bootUR)
-
+library(svars)
+        
 # 1. DATA EXPLORATION
 # TASK 1.1: LOADING AND EXPLORING DATA
 FRED_data <- read.csv('DataCase.csv')
@@ -69,6 +70,7 @@ print(adf_fedfunds)
 # y_{2,t} = c_2 + sum_{i=1}^p (\phi_{21}INPRO_{t-i} + \phi_{22}CPIULFSL_{t-i} + \phi_{23}FEDFUNDS_{t-i} + e_{2t})
 # y_{3,t} = c_3 + sum_{i=1}^p (\phi_{31}INPRO_{t-i} + \phi_{32}CPIULFSL_{t-i} + \phi_{33}FEDFUNDS_{t-i} + e_{3t})
 
+# TASK 2.2: DETERMINING LAG ORDER
 #POPULAR METHODs for LAG SELECTION
 lag_selection <- VARselect(VAR_data, lag.max = 20, type = "const")
 print(lag_selection)
@@ -115,55 +117,11 @@ optimal_lag <- min(results$Lag[results$P_Value > 0.05])
 cat("Optimal lag selected:", optimal_lag, "\n")
 
 ## We decided to choose the BIC for the lag length selection, not the sequential test. So lag length = 3
-
-VAR_model <- VAR(VAR_data, p = 3, type = "const")
-summary(VAR_model)
-
-## VALIDATING VAR MODEL
-
-#Alternative technique would have been: select Pmax and sequential testing on null coeff. matrix (Not done here, but mentioned)
-
-# TASK 2.2: DETERMINING LAG ORDER
-VAR_model <- VAR(VAR_data, p = 3, type = "const")
-summary(VAR_model)
-
 #ESTIMATING VAR(p=3) MODEL
+VAR_model <- VAR(VAR_data, p = 3, type = "const")
+summary(VAR_model)
 
 # TASK 2.3: VALIDATING VAR MODEL
-## check if all time series are actually stationary
-# Remove NA values from the transformed series
-INDPRO_stationary <- VAR_data$INDPRO_stationary
-CPIULFSL_stationary <- VAR_data$CPIULFSL_stationary
-FEDFUNDS_stationary <- VAR_data$FEDFUNDS_stationary
-
-# ADF test for INDPRO_stationary
-adf_indpro <- adf.test(INDPRO_stationary, alternative = "stationary")
-
-# ADF test for CPIULFSL_stationary
-adf_cpi <- adf.test(CPIULFSL_stationary, alternative = "stationary")
-
-# ADF test for FEDFUNDS_stationary
-adf_fedfunds <- adf.test(FEDFUNDS_stationary, alternative = "stationary")
-
-print(adf_indpro)
-print(adf_cpi)
-print(adf_fedfunds)
-
-# Extract residuals from VAR model
-var_residuals <- residuals(VAR_model)
-
-# Perform ADF test on each residual series
-adf_indpro <- adf.test(var_residuals[, "INDPRO_stationary"], alternative = "stationary")
-adf_cpiulfsl <- adf.test(var_residuals[, "CPIULFSL_stationary"], alternative = "stationary")
-adf_fedfunds <- adf.test(var_residuals[, "FEDFUNDS_stationary"], alternative = "stationary")
-
-# Print results
-print(adf_indpro)
-print(adf_cpiulfsl)
-print(adf_fedfunds)
-
-# The residuals are stationary
-
 # Check for stability of the VAR model
 stability <- roots(VAR_model)
 print(stability)
@@ -175,11 +133,8 @@ if (all(Mod(stability) < 1)) {
   cat("The VAR model is NOT stable.\n")
 }
 
-# Error terms are staionary and VAR is stable implying vector yt is stationary
-
 # Extract residuals
 var_residuals <- residuals(VAR_model)
-# Error terms are staionary and VAR is stable implying vector yt is stationary
 
 # Perform Ljung-Box test on residuals of each equation
 for (i in colnames(var_residuals)) {
@@ -216,35 +171,6 @@ ccf(var_residuals[, "INDPRO_stationary"], var_residuals[, "FEDFUNDS_stationary"]
 # Cross-correlation between CPIULFSL and FEDFUNDS residuals
 ccf(var_residuals[, "CPIULFSL_stationary"], var_residuals[, "FEDFUNDS_stationary"],
     main = "Cross-correlation between CPIULFSL and FEDFUNDS residuals")
-
-                     
-# Fit VAR(3) model
-VAR_model <- VAR(VAR_data, p = 3, type = "const")
-
-# Perform Jarque-Bera test for normality on residuals
-normality_test <- normality.test(VAR_model)
-print(normality_test)
-                    
-# Extract residuals
-residuals <- residuals(VAR_model)
-
-
-# Plot the density of residuals for each equation
-par(mfrow = c(2, 2))  # Set up a 2x2 grid for plots
-
-for (i in colnames(residuals)) {
-  # Density plot
-  plot(density(residuals[, i]), 
-       main = paste("Density of Residuals for", i),
-       xlab = "Residuals", 
-       ylab = "Density",
-       col = "blue", 
-       lwd = 2)
-}
-
-par(mfrow = c(1, 1))  # Reset to default layout
-
-# Autocorrelation exists due to Model Specification: not all relevant variables are included in the model
 
 # 3. GRANGER CAUSALITY
 # TASK 3.1: EXPLAIN GRANGER CAUSALITY
@@ -391,6 +317,11 @@ plot(irf_ffr_to_ffr, main = "Response of FFR to a Shock in FFR")
 #OBTAINING IRF(levels) from IRF(original)
 
 
+
+
+                     
+
+
 # TASK 4.6: 
 # We have now obtained IRF's for the original time series 
 # = IRF's for the "reduced-form" specification of the VAR
@@ -412,7 +343,7 @@ plot(irf_ffr_to_ffr, main = "Response of FFR to a Shock in FFR")
 
 # TASK 5.1: Difference between reduced-form VAR and SVAR
 
-#Reduced-form VAR = original VAR(2) model
+#Reduced-form VAR = original VAR(3) model
 
 #-->Each variable explained by lags of its own and other variables
 #-->We measure correlations between variables but dont know why the correlation happens
@@ -426,8 +357,6 @@ plot(irf_ffr_to_ffr, main = "Response of FFR to a Shock in FFR")
 #Reduced-form VAR shows what happens, SVAR shows why it happens
 
 # TASK 5.2: SVAR Model Equation
-library(svars)
-
 
 # Ensure the variables are in the correct order
 # Reorder the VAR data to match the recursive order: FEDFUNDS -> CPIULFSL -> INDPRO
@@ -453,8 +382,7 @@ irf_svar <- irf(SVAR_model1, n.ahead = 12, boot = TRUE, ci = 0.95)
 # Plot IRFs
 plot(irf_svar, main = "Impulse Response Functions for SVAR (Cholesky)")
 
-
-# Fit the reduced-form VAR model with 2 lags (chosen previously)
+# Fit the reduced-form VAR model with 3 lags (chosen previously)
 VAR_model2 <- VAR(VAR_data_reordered2, p = 3, type = "const")
 
 # Apply the Cholesky decomposition to identify the structural VAR
