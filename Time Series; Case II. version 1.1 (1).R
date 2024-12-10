@@ -316,12 +316,150 @@ plot(irf_ffr_to_ffr, main = "Response of FFR to a Shock in FFR")
 
 #OBTAINING IRF(levels) from IRF(original)
 
+starting_level_ind <- tail(as.numeric(Data$INDPRO), 1)
+starting_level_cpi <- tail(as.numeric(Data$CPIULFSL), 1)
+starting_level_fed <- tail(as.numeric(Data$FEDFUNDS), 1)
+
+# IRFs for INDPRO_stationary
+irf_indpro_to_indpro <- irf(VAR_model, impulse = "INDPRO_stationary", response = "INDPRO_stationary", n.ahead = 24, boot = TRUE, ci = 0.95)
+irf_indpro_to_cpi <- irf(VAR_model, impulse = "INDPRO_stationary", response = "CPIULFSL_stationary", n.ahead = 24, boot = TRUE, ci = 0.95)
+irf_indpro_to_ffr <- irf(VAR_model, impulse = "INDPRO_stationary", response = "FEDFUNDS_stationary", n.ahead = 24, boot = TRUE, ci = 0.95)
+
+# IRFs for CPIULFSL_stationary
+irf_cpi_to_indpro <- irf(VAR_model, impulse = "CPIULFSL_stationary", response = "INDPRO_stationary", n.ahead = 24, boot = TRUE, ci = 0.95)
+irf_cpi_to_cpi <- irf(VAR_model, impulse = "CPIULFSL_stationary", response = "CPIULFSL_stationary", n.ahead = 24, boot = TRUE, ci = 0.95)
+irf_cpi_to_ffr <- irf(VAR_model, impulse = "CPIULFSL_stationary", response = "FEDFUNDS_stationary", n.ahead = 24, boot = TRUE, ci = 0.95)
+
+# IRFs for FEDFUNDS_stationary
+irf_ffr_to_indpro <- irf(VAR_model, impulse = "FEDFUNDS_stationary", response = "INDPRO_stationary", n.ahead = 24, boot = TRUE, ci = 0.95)
+irf_ffr_to_cpi <- irf(VAR_model, impulse = "FEDFUNDS_stationary", response = "CPIULFSL_stationary", n.ahead = 24, boot = TRUE, ci = 0.95)
+irf_ffr_to_ffr <- irf(VAR_model, impulse = "FEDFUNDS_stationary", response = "FEDFUNDS_stationary", n.ahead = 24, boot = TRUE, ci = 0.95)
+
+# Response Variable: Industrial Production
+par(mfrow = c(1, 3), oma = c(0, 0, 2, 0))
+
+# INDPRO_stationary → INDPRO_stationary
+irf_values_ind_ind <- irf_indpro_to_indpro$irf$INDPRO_stationary
+cumulative_irf_ind_ind <- cumsum(irf_values_ind_ind) 
+level_irf_ind_ind <- exp(cumulative_irf_ind_ind) * starting_level_ind
+
+# CPIULFSL_stationary → INDPRO_stationary
+irf_values_cpi_ind <- irf_cpi_to_indpro$irf$CPIULFSL_stationary
+cumulative_irf_cpi_ind <- cumsum(irf_values_cpi_ind)
+level_irf_cpi_ind <- exp(cumulative_irf_cpi_ind) * starting_level_ind
+
+# FEDFUNDS_stationary → INDPRO_stationary
+irf_values_fed_ind <- irf_ffr_to_indpro$irf$FEDFUNDS_stationary  
+cumulative_irf_fed_ind <- cumsum(irf_values_fed_ind)  
+level_irf_fed_ind <- exp(cumulative_irf_fed_ind) * starting_level_ind
 
 
+# RESPONSE: Consumer Price Index
+par(mfrow = c(1, 3), oma = c(0, 0, 2, 0))
+
+# FEDFUNDS_stationary → CPIULFSL_stationary
+irf_values_fed_cpi <- irf_ffr_to_cpi$irf$FEDFUNDS_stationary  
+cumulative_irf_fed_cpi <- cumsum(irf_values_fed_cpi)  
+level_irf_fed_cpi <- exp(cumulative_irf_fed_cpi) * starting_level_cpi
+
+# INDPRO_stationary → CPIULFSL_stationary
+irf_values_ind_cpi <- irf_indpro_to_cpi$irf$INDPRO_stationary  
+cumulative_irf_ind_cpi <- cumsum(irf_values_ind_cpi)  
+level_irf_ind_cpi <- exp(cumulative_irf_ind_cpi) * starting_level_cpi
+
+# CPIULFSL_stationary → CPIULFSL_stationary
+irf_values_cpi_cpi <- irf_cpi_to_cpi$irf$CPIULFSL_stationary  
+cumulative_irf_cpi_cpi <- cumsum(irf_values_cpi_cpi)  
+level_irf_cpi_cpi <- exp(cumulative_irf_cpi_cpi) * starting_level_cpi
+
+# Response Variable: Federal Funds Rates
+
+# CPIULFSL_stationary → FEDFUNDS_stationary
+irf_values_cpi_fed <- irf_cpi_to_ffr$irf$CPIULFSL_stationary  
+cumulative_irf_cpi_fed <- cumsum(irf_values_cpi_fed)  
+level_irf_cpi_fed <- exp(cumulative_irf_cpi_fed) * starting_level_fed
+
+# INDPRO_stationary → FEDFUNDS_stationary
+irf_values_ind_fed <- irf_indpro_to_ffr$irf$INDPRO_stationary  
+cumulative_irf_ind_fed <- cumsum(irf_values_ind_fed)  
+level_irf_ind_fed <- exp(cumulative_irf_ind_fed) * starting_level_fed
+
+# FEDFUNDS_stationary → FEDFUNDS_stationary
+irf_values_fed_fed <- irf_ffr_to_ffr$irf$FEDFUNDS_stationary  
+cumulative_irf_fed_fed <- cumsum(irf_values_fed_fed)  
+level_irf_fed_fed <- exp(cumulative_irf_fed_fed) * starting_level_fed
+
+# Define the time horizon (1 to 24 periods ahead)
+horizon <- 0:24
+
+# Set up the plotting area: 3 rows, 1 column
+par(mfrow = c(3, 1),    # 3 rows, 1 column
+    mar = c(4, 4, 2, 1), # Margins: bottom, left, top, right
+    oma = c(0, 0, 2, 0)) # Outer margins
+
+### **a. Plot for Response Variable: Industrial Production (INDPRO)**
+plot(horizon, level_irf_ind_ind, type = "l", col = "blue", lwd = 2,
+     ylim = range(c(level_irf_ind_ind, level_irf_cpi_ind, level_irf_fed_ind)),
+     xlab = "Horizon (Periods Ahead)",
+     ylab = "Industrial Production Level",
+     main = "IRFs: Response - Industrial Production")
+
+# Add responses to CPI and FEDFUNDS shocks
+lines(horizon, level_irf_cpi_ind, col = "red", lwd = 2)
+lines(horizon, level_irf_fed_ind, col = "green", lwd = 2)
+
+# Add a legend
+legend("topright",
+       legend = c("Shock: INDPRO", "Shock: CPIULFSL", "Shock: FEDFUNDS"),
+       col = c("blue", "red", "green"),
+       lty = 1,
+       lwd = 2,
+       bty = "n") # No box around the legend
+
+
+### **b. Plot for Response Variable: Consumer Price Index (CPIULFSL)**
+plot(horizon, level_irf_fed_cpi, type = "l", col = "blue", lwd = 2,
+     ylim = range(c(level_irf_fed_cpi, level_irf_ind_cpi, level_irf_cpi_cpi)),
+     xlab = "Horizon (Periods Ahead)",
+     ylab = "CPI Level",
+     main = "IRFs: Response - Consumer Price Index")
+
+# Add responses to INDPRO and CPI shocks
+lines(horizon, level_irf_ind_cpi, col = "red", lwd = 2)
+lines(horizon, level_irf_cpi_cpi, col = "green", lwd = 2)
+
+# Add a legend
+legend("topright",
+       legend = c("Shock: FEDFUNDS", "Shock: INDPRO", "Shock: CPIULFSL"),
+       col = c("blue", "red", "green"),
+       lty = 1,
+       lwd = 2,
+       bty = "n")
+
+
+### **c. Plot for Response Variable: Federal Funds Rates (FEDFUNDS)**
+plot(horizon, level_irf_cpi_fed, type = "l", col = "blue", lwd = 2,
+     ylim = range(c(level_irf_cpi_fed, level_irf_ind_fed, level_irf_fed_fed)),
+     xlab = "Horizon (Periods Ahead)",
+     ylab = "Federal Funds Rate Level",
+     main = "IRFs: Response - Federal Funds Rates")
+
+# Add responses to INDPRO and FEDFUNDS shocks
+lines(horizon, level_irf_ind_fed, col = "red", lwd = 2)
+lines(horizon, level_irf_fed_fed, col = "green", lwd = 2)
+
+# Add a legend
+legend("topright",
+       legend = c("Shock: CPIULFSL", "Shock: INDPRO", "Shock: FEDFUNDS"),
+       col = c("blue", "red", "green"),
+       lty = 1,
+       lwd = 2,
+       bty = "n")
+
+# Reset plotting parameters to default
+par(mfrow = c(1, 1))
 
                      
-
-
 # TASK 4.6: 
 # We have now obtained IRF's for the original time series 
 # = IRF's for the "reduced-form" specification of the VAR
